@@ -9,41 +9,34 @@
 # Please see the LICENSE file that should have been included as part of this
 # package.
 """Provide objects to represent biological sequences with alphabets.
-
 See also the Seq_ wiki and the chapter in our tutorial:
  - `HTML Tutorial`_
  - `PDF Tutorial`_
-
 .. _Seq: http://biopython.org/wiki/Seq
 .. _`HTML Tutorial`: http://biopython.org/DIST/docs/tutorial/Tutorial.html
 .. _`PDF Tutorial`: http://biopython.org/DIST/docs/tutorial/Tutorial.pdf
-
 """
 
 import array
 import sys
-
 import warnings
-from Bio import Alphabet
+
 from Bio import BiopythonWarning
-from Bio.Data import CodonTable
+from Bio import Alphabet
 from Bio.Data.IUPACData import ambiguous_dna_complement, ambiguous_rna_complement
 from Bio.Data.IUPACData import ambiguous_dna_letters as _ambiguous_dna_letters
 from Bio.Data.IUPACData import ambiguous_rna_letters as _ambiguous_rna_letters
+from Bio.Data import CodonTable
 
 
 def _maketrans(complement_mapping):
     """Make a python string translation table (PRIVATE).
-
     Arguments:
      - complement_mapping - a dictionary such as ambiguous_dna_complement
        and ambiguous_rna_complement from Data.IUPACData.
-
     Returns a translation table (a string of length 256) for use with the
     python string's translate method to use in a (reverse) complement.
-
     Compatible with lower case and upper case sequences.
-
     For internal use only.
     """
     before = "".join(complement_mapping.keys())
@@ -59,20 +52,16 @@ _rna_complement_table = _maketrans(ambiguous_rna_complement)
 
 class Seq:
     """Read-only sequence object (essentially a string with an alphabet).
-
     Like normal python strings, our basic sequence object is immutable.
     This prevents you from doing my_seq[5] = "A" for example, but does allow
     Seq objects to be used as dictionary keys.
-
     The Seq object provides a number of string like methods (such as count,
     find, split and strip), which are alphabet aware where appropriate.
-
     In addition to the string like sequence, the Seq object has an alphabet
     property. This is an instance of an Alphabet class from Bio.Alphabet,
     for example generic DNA, or IUPAC DNA. This describes the type of molecule
     (e.g. RNA, DNA, protein) and may also indicate the expected symbols
     (letters).
-
     The Seq object also provides some biological methods, such as complement,
     reverse_complement, transcribe, back_transcribe and translate (which are
     not applicable to sequences with a protein alphabet).
@@ -80,18 +69,14 @@ class Seq:
 
     def __init__(self, data, alphabet=Alphabet.generic_alphabet):
         """Create a Seq object.
-
         Arguments:
          - seq - Sequence, required (string)
          - alphabet - Optional argument, an Alphabet object from
            Bio.Alphabet
-
         You will typically use Bio.SeqIO to read in sequences from files as
         SeqRecord objects, whose sequence will be exposed as a Seq object via
         the seq property.
-
         However, will often want to create your own Seq objects directly:
-
         >>> from Bio.Seq import Seq
         >>> my_seq = Seq("MKQHKAMIVALIVICITAVVAALVTRKDLCEVHIRTGQTEVAVF")
         >>> my_seq
@@ -120,12 +105,10 @@ class Seq:
 
     def __str__(self):
         """Return the full sequence as a python string, use str(my_seq).
-
         Note that Biopython 1.44 and earlier would give a truncated
         version of repr(my_seq) for str(my_seq).  If you are writing code
         which need to be backwards compatible with really old Biopython,
         you should continue to use my_seq.tostring() as follows::
-
             try:
                 # The old way, removed in Biopython 1.73
                 as_string = seq_obj.tostring()
@@ -133,13 +116,11 @@ class Seq:
                 # The new way, needs Biopython 1.45 or later.
                 # Don't use this on Biopython 1.44 or older as truncates
                 as_string = str(seq_obj)
-
         """
         return self._data
 
     def __hash__(self):
         """Hash of the sequence as a string (ignoring alphabet) for comparison.
-
         See Seq object comparison documentation (method ``__eq__`` in
         particular) as this has changed in Biopython 1.65. Older versions
         would hash on object identity.
@@ -148,15 +129,12 @@ class Seq:
 
     def __eq__(self, other):
         """Compare the sequence to another sequence or a string (README).
-
         Historically comparing Seq objects has done Python object comparison.
         After considerable discussion (keeping in mind constraints of the
         Python language, hashes and dictionary support), Biopython now uses
         simple string comparison (with a warning about the change).
-
         If you still need to support releases prior to Biopython 1.65, please
         just do explicit comparisons:
-
         >>> from Bio.Seq import Seq
         >>> seq1 = Seq("ACGT")
         >>> seq2 = Seq("ACGT")
@@ -164,9 +142,7 @@ class Seq:
         False
         >>> str(seq1) == str(seq2)
         True
-
         The new behaviour is to use string-like equality:
-
         >>> from Bio.Seq import Seq
         >>> from Bio.Alphabet import generic_dna
         >>> seq1 == seq2
@@ -175,7 +151,6 @@ class Seq:
         True
         >>> seq1 == Seq("ACGT", generic_dna)
         True
-
         """
         return str(self) == str(other)
 
@@ -221,7 +196,6 @@ class Seq:
 
     def __getitem__(self, index):  # Seq API requirement
         """Return a subsequence of single letter, use my_seq[index].
-
         >>> my_seq = Seq('ACTCGACGTCG')
         >>> my_seq[5]
         'A'
@@ -235,24 +209,19 @@ class Seq:
 
     def __add__(self, other):
         """Add another sequence or string to this sequence.
-
         If adding a string to a Seq, the alphabet is preserved:
-
         >>> from Bio.Seq import Seq
         >>> from Bio.Alphabet import generic_protein
         >>> Seq("MELKI", generic_protein) + "LV"
         Seq('MELKILV')
-
         When adding two Seq (like) objects, if they share the
         same alphabet it is preserved, but otherwise discarded.
         This means you can add RNA and DNA, or nucleotide and
         protein if you really want to. This is a change as of
         Biopython 1.78, this previously raised a TypeError:
-
         >>> from Bio.Alphabet import generic_dna, generic_rna
         >>> Seq("ACGT", generic_dna) + Seq("ACGU", generic_rna)
         Seq('ACGTACGU')
-
         >>> from Bio.Alphabet import generic_dna, generic_protein
         >>> Seq("ACGT", generic_dna) + Seq("MELKI", generic_protein)
         Seq('ACGTMELKI')
@@ -278,14 +247,11 @@ class Seq:
 
     def __radd__(self, other):
         """Add a sequence on the left.
-
         If adding a string to a Seq, the alphabet is preserved:
-
         >>> from Bio.Seq import Seq
         >>> from Bio.Alphabet import generic_protein
         >>> "LV" + Seq("MELKI", generic_protein)
         Seq('LVMELKI')
-
         Adding two Seq (like) objects is handled via the __add__ method.
         """
         if hasattr(other, "alphabet"):
@@ -303,7 +269,6 @@ class Seq:
 
     def __mul__(self, other):
         """Multiply Seq by integer.
-
         >>> from Bio.Seq import Seq
         >>> Seq('ATG') * 2
         Seq('ATGATG')
@@ -314,7 +279,6 @@ class Seq:
 
     def __rmul__(self, other):
         """Multiply integer by Seq.
-
         >>> from Bio.Seq import Seq
         >>> 2 * Seq('ATG')
         Seq('ATGATG')
@@ -325,10 +289,8 @@ class Seq:
 
     def __imul__(self, other):
         """Multiply Seq in-place.
-
         Note although Seq is immutable, the in-place method is
         included to match the behaviour for regular Python strings.
-
         >>> from Bio.Seq import Seq
         >>> seq = Seq('ATG')
         >>> seq *= 2
@@ -341,7 +303,6 @@ class Seq:
 
     def tomutable(self):  # Needed?  Or use a function?
         """Return the full sequence as a MutableSeq object.
-
         >>> from Bio.Seq import Seq
         >>> my_seq = Seq("MKQHKAMIVALIVICITAVVAAL")
         >>> my_seq
@@ -353,24 +314,18 @@ class Seq:
 
     def count(self, sub, start=0, end=sys.maxsize):
         """Return a non-overlapping count, like that of a python string.
-
         This behaves like the python string method of the same name,
         which does a non-overlapping count!
-
         For an overlapping search use the newer count_overlap() method.
-
         Returns an integer, the number of occurrences of substring
         argument sub in the (sub)sequence given by [start:end].
         Optional arguments start and end are interpreted as in slice
         notation.
-
         Arguments:
          - sub - a string or another Seq object to look for
          - start - optional integer, slice start
          - end - optional integer, slice end
-
         e.g.
-
         >>> from Bio.Seq import Seq
         >>> my_seq = Seq("AAAATGA")
         >>> print(my_seq.count("A"))
@@ -381,16 +336,13 @@ class Seq:
         1
         >>> print(my_seq.count("AT", 2, -1))
         1
-
         HOWEVER, please note because python strings and Seq objects (and
         MutableSeq objects) do a non-overlapping search, this may not give
         the answer you expect:
-
         >>> "AAAA".count("AA")
         2
         >>> print(Seq("AAAA").count("AA"))
         2
-
         An overlapping search, as implemented in .count_overlap(),
         would give the answer as three!
         """
@@ -398,21 +350,16 @@ class Seq:
 
     def count_overlap(self, sub, start=0, end=sys.maxsize):
         """Return an overlapping count.
-
         For a non-overlapping search use the count() method.
-
         Returns an integer, the number of occurrences of substring
         argument sub in the (sub)sequence given by [start:end].
         Optional arguments start and end are interpreted as in slice
         notation.
-
         Arguments:
          - sub - a string or another Seq object to look for
          - start - optional integer, slice start
          - end - optional integer, slice end
-
         e.g.
-
         >>> from Bio.Seq import Seq
         >>> print(Seq("AAAA").count_overlap("AA"))
         3
@@ -420,10 +367,8 @@ class Seq:
         4
         >>> print(Seq("ATATATATA").count_overlap("ATA", 3, -1))
         1
-
         Where substrings do not overlap, should behave the same as
         the count() method:
-
         >>> from Bio.Seq import Seq
         >>> my_seq = Seq("AAAATGA")
         >>> print(my_seq.count_overlap("A"))
@@ -442,7 +387,6 @@ class Seq:
         1
         >>> my_seq.count_overlap("AT", 2, -1) == my_seq.count("AT", 2, -1)
         True
-
         HOWEVER, do not use this method for such cases because the
         count() method is much for efficient.
         """
@@ -458,9 +402,7 @@ class Seq:
 
     def __contains__(self, char):
         """Implement the 'in' keyword, like a python string.
-
         e.g.
-
         >>> from Bio.Seq import Seq
         >>> my_dna = Seq("ATATGAAATTTGAAAA")
         >>> "AAA" in my_dna
@@ -472,21 +414,15 @@ class Seq:
 
     def find(self, sub, start=0, end=sys.maxsize):
         """Find method, like that of a python string.
-
         This behaves like the python string method of the same name.
-
         Returns an integer, the index of the first occurrence of substring
         argument sub in the (sub)sequence given by [start:end].
-
         Arguments:
          - sub - a string or another Seq object to look for
          - start - optional integer, slice start
          - end - optional integer, slice end
-
         Returns -1 if the subsequence is NOT found.
-
         e.g. Locating the first typical start codon, AUG, in an RNA sequence:
-
         >>> from Bio.Seq import Seq
         >>> my_rna = Seq("GUCAUGGCCAUUGUAAUGGGCCGCUGAAAGGGUGCCCGAUAGUUG")
         >>> my_rna.find("AUG")
@@ -496,21 +432,15 @@ class Seq:
 
     def rfind(self, sub, start=0, end=sys.maxsize):
         """Find from right method, like that of a python string.
-
         This behaves like the python string method of the same name.
-
         Returns an integer, the index of the last (right most) occurrence of
         substring argument sub in the (sub)sequence given by [start:end].
-
         Arguments:
          - sub - a string or another Seq object to look for
          - start - optional integer, slice start
          - end - optional integer, slice end
-
         Returns -1 if the subsequence is NOT found.
-
         e.g. Locating the last typical start codon, AUG, in an RNA sequence:
-
         >>> from Bio.Seq import Seq
         >>> my_rna = Seq("GUCAUGGCCAUUGUAAUGGGCCGCUGAAAGGGUGCCCGAUAGUUG")
         >>> my_rna.rfind("AUG")
@@ -520,7 +450,6 @@ class Seq:
 
     def index(self, sub, start=0, end=sys.maxsize):
         """Like find() but raise ValueError when the substring is not found.
-
         >>> from Bio.Seq import Seq
         >>> my_rna = Seq("GUCAUGGCCAUUGUAAUGGGCCGCUGAAAGGGUGCCCGAUAGUUG")
         >>> my_rna.find("T")
@@ -538,15 +467,12 @@ class Seq:
 
     def startswith(self, prefix, start=0, end=sys.maxsize):
         """Return True if the Seq starts with the given prefix, False otherwise.
-
         This behaves like the python string method of the same name.
-
         Return True if the sequence starts with the specified prefix
         (a string or another Seq object), False otherwise.
         With optional start, test sequence beginning at that position.
         With optional end, stop comparing sequence at that position.
         prefix can also be a tuple of strings to try.  e.g.
-
         >>> from Bio.Seq import Seq
         >>> my_rna = Seq("GUCAUGGCCAUUGUAAUGGGCCGCUGAAAGGGUGCCCGAUAGUUG")
         >>> my_rna.startswith("GUC")
@@ -566,15 +492,12 @@ class Seq:
 
     def endswith(self, suffix, start=0, end=sys.maxsize):
         """Return True if the Seq ends with the given suffix, False otherwise.
-
         This behaves like the python string method of the same name.
-
         Return True if the sequence ends with the specified suffix
         (a string or another Seq object), False otherwise.
         With optional start, test sequence beginning at that position.
         With optional end, stop comparing sequence at that position.
         suffix can also be a tuple of strings to try.  e.g.
-
         >>> from Bio.Seq import Seq
         >>> my_rna = Seq("GUCAUGGCCAUUGUAAUGGGCCGCUGAAAGGGUGCCCGAUAGUUG")
         >>> my_rna.endswith("UUG")
@@ -594,20 +517,15 @@ class Seq:
 
     def split(self, sep=None, maxsplit=-1):
         """Split method, like that of a python string.
-
         This behaves like the python string method of the same name.
-
         Return a list of the 'words' in the string (as Seq objects),
         using sep as the delimiter string.  If maxsplit is given, at
         most maxsplit splits are done.  If maxsplit is omitted, all
         splits are made.
-
         Following the python string method, sep will by default be any
         white space (tabs, spaces, newlines) but this is unlikely to
         apply to biological sequences.
-
         e.g.
-
         >>> from Bio.Seq import Seq
         >>> my_rna = Seq("GUCAUGGCCAUUGUAAUGGGCCGCUGAAAGGGUGCCCGAUAGUUG")
         >>> my_aa = my_rna.translate()
@@ -622,9 +540,7 @@ class Seq:
         ...     pep
         Seq('VMAIVMGR')
         Seq('KGAR*L')
-
         See also the rsplit method:
-
         >>> for pep in my_aa.rsplit("*", 1):
         ...     pep
         Seq('VMAIVMGR*KGAR')
@@ -634,79 +550,60 @@ class Seq:
 
     def rsplit(self, sep=None, maxsplit=-1):
         """Do a right split method, like that of a python string.
-
         This behaves like the python string method of the same name.
-
         Return a list of the 'words' in the string (as Seq objects),
         using sep as the delimiter string.  If maxsplit is given, at
         most maxsplit splits are done COUNTING FROM THE RIGHT.
         If maxsplit is omitted, all splits are made.
-
         Following the python string method, sep will by default be any
         white space (tabs, spaces, newlines) but this is unlikely to
         apply to biological sequences.
-
         e.g. print(my_seq.rsplit("*",1))
-
         See also the split method.
         """
         return [Seq(part) for part in str(self).rsplit(str(sep), maxsplit)]
 
     def strip(self, chars=None):
         """Return a new Seq object with leading and trailing ends stripped.
-
         This behaves like the python string method of the same name.
-
         Optional argument chars defines which characters to remove.  If
         omitted or None (default) then as for the python string method,
         this defaults to removing any white space.
-
         e.g. print(my_seq.strip("-"))
-
         See also the lstrip and rstrip methods.
         """
         return Seq(str(self).strip(str(chars)))
 
     def lstrip(self, chars=None):
         """Return a new Seq object with leading (left) end stripped.
-
         This behaves like the python string method of the same name.
-
         Optional argument chars defines which characters to remove.  If
         omitted or None (default) then as for the python string method,
         this defaults to removing any white space.
-
         e.g. print(my_seq.lstrip("-"))
-
         See also the strip and rstrip methods.
         """
         return Seq(str(self).lstrip(str(chars)))
 
     def rstrip(self, chars=None):
         """Return a new Seq object with trailing (right) end stripped.
-
         This behaves like the python string method of the same name.
-
         Optional argument chars defines which characters to remove.  If
         omitted or None (default) then as for the python string method,
         this defaults to removing any white space.
-
         e.g. Removing a nucleotide sequence's polyadenylation (poly-A tail):
-
         >>> from Bio.Seq import Seq
         >>> my_seq = Seq("CGGTACGCTTATGTCACGTAGAAAAAA")
         >>> my_seq
         Seq('CGGTACGCTTATGTCACGTAGAAAAAA')
         >>> my_seq.rstrip("A")
         Seq('CGGTACGCTTATGTCACGTAG')
-
         See also the strip and lstrip methods.
         """
         return Seq(str(self).rstrip(str(chars)))
 
     def upper(self):
         """Return an upper case copy of the sequence.
-
         >>> from Bio.Seq import Seq
         >>> my_seq = Seq("VHLTPeeK*")
         >>> my_seq
@@ -720,26 +617,21 @@ class Seq:
 
     def lower(self):
         """Return a lower case copy of the sequence.
-
         >>> from Bio.Seq import Seq
         >>> my_seq = Seq("CGGTACGCTTATGTCACGTAGAAAAAA")
         >>> my_seq
         Seq('CGGTACGCTTATGTCACGTAGAAAAAA')
         >>> my_seq.lower()
         Seq('cggtacgcttatgtcacgtagaaaaaa')
-
         See also the upper method.
         """
         return Seq(str(self).lower())
 
     def encode(self, encoding="utf-8", errors="strict"):
         """Return an encoded version of the sequence as a bytes object.
-
         The Seq object aims to match the interface of a Python string.
-
         This is essentially to save you doing str(my_seq).encode() when
         you need a bytes string, for example for computing a hash:
-
         >>> from Bio.Seq import Seq
         >>> Seq("ACGT").encode("ascii")
         b'ACGT'
@@ -748,61 +640,47 @@ class Seq:
 
     def complement(self):
         """Return the complement sequence by creating a new Seq object.
-
         This method is intended for use with DNA sequences:
-
         >>> from Bio.Seq import Seq
         >>> my_dna = Seq("CCCCCGATAG")
         >>> my_dna
         Seq('CCCCCGATAG')
         >>> my_dna.complement()
         Seq('GGGGGCTATC')
-
         You can of course used mixed case sequences,
-
         >>> from Bio.Seq import Seq
         >>> my_dna = Seq("CCCCCgatA-GD")
         >>> my_dna
         Seq('CCCCCgatA-GD')
         >>> my_dna.complement()
         Seq('GGGGGctaT-CH')
-
         Note in the above example, ambiguous character D denotes
         G, A or T so its complement is H (for C, T or A).
-
         Note that if the sequence contains neither T nor U, we
         assume it is DNA and map any A character to T:
-
         >>> Seq("CGA").complement()
         Seq('GCT')
         >>> Seq("CGAT").complement()
         Seq('GCTA')
-
         If you actually have RNA, this currently works but we
         may deprecate this later. We recommend using the new
         complement_rna method instead:
-
         >>> Seq("CGAU").complement()
         Seq('GCUA')
         >>> Seq("CGAU").complement_rna()
         Seq('GCUA')
-
         If the sequence contains both T and U, an exception is
         raised:
-
         >>> Seq("CGAUT").complement()
         Traceback (most recent call last):
            ...
         ValueError: Mixed RNA/DNA found
-
         Trying to complement a protein sequence gives a meaningless
         sequence:
-
         >>> from Bio.Alphabet import generic_protein
         >>> my_protein = Seq("MAIVMGR", generic_protein)
         >>> my_protein.complement()
         Seq('KTIBKCY')
-
         Here "M" was interpreted as the IUPAC ambiguity code for
         "A" or "C", with complement "K" for "T" or "G". Likewise
         "A" has complement "T". The letter "I" has no defined
@@ -823,21 +701,16 @@ class Seq:
 
     def reverse_complement(self):
         """Return the reverse complement sequence by creating a new Seq object.
-
         This method is intended for use with DNA sequences:
-
         >>> from Bio.Seq import Seq
         >>> my_dna = Seq("CCCCCGATAGNR")
         >>> my_dna
         Seq('CCCCCGATAGNR')
         >>> my_dna.reverse_complement()
         Seq('YNCTATCGGGGG')
-
         Note in the above example, since R = G or A, its complement
         is Y (which denotes C or T).
-
         You can of course used mixed case sequences,
-
         >>> from Bio.Alphabet import generic_dna
         >>> from Bio.Seq import Seq
         >>> my_dna = Seq("CCCCCgatA-G", generic_dna)
@@ -845,35 +718,27 @@ class Seq:
         Seq('CCCCCgatA-G')
         >>> my_dna.reverse_complement()
         Seq('C-TatcGGGGG')
-
         As discussed for the complement method, if the sequence
         contains neither T nor U, is is assumed to be DNA and
         will map any letter A to T.
-
         If you are dealing with RNA you should use the new
         reverse_complement_rna method instead
-
         >>> Seq("CGA").reverse_complement()  # defaults to DNA
         Seq('TCG')
         >>> Seq("CGA").reverse_complement_rna()
         Seq('UCG')
-
         If the sequence contains both T and U, an exception is raised:
-
         >>> Seq("CGAUT").reverse_complement()
         Traceback (most recent call last):
            ...
         ValueError: Mixed RNA/DNA found
-
         Trying to reverse complement a protein sequence will give
         a meaningless sequence:
-
         >>> from Bio.Alphabet import generic_protein
         >>> from Bio.Seq import Seq
         >>> my_protein = Seq("MAIVMGR", generic_protein)
         >>> my_protein.reverse_complement()
         Seq('YCKBITK')
-
         Here "M" was interpretted as the IUPAC ambiguity code for
         "A" or "C", with complement "K" for "T" or "G" - and so on.
         """
@@ -882,21 +747,16 @@ class Seq:
 
     def complement_rna(self):
         """Complement of an RNA sequence.
-
         >>> Seq("CGA").complement()  # defaults to DNA
         Seq('GCT')
         >>> Seq("CGA").complement_rna()
         Seq('GCU')
-
         If the sequence contains both T and U, an exception is raised:
-
         >>> Seq("CGAUT").complement_rna()
         Traceback (most recent call last):
            ...
         ValueError: Mixed RNA/DNA found
-
         If the sequence contains T, an exception is raised:
-
         >>> Seq("ACGT").complement_rna()
         Traceback (most recent call last):
            ...
@@ -911,7 +771,6 @@ class Seq:
 
     def reverse_complement_rna(self):
         """Reverse complement of an RNA sequence.
-
         >>> from Bio.Seq import Seq
         >>> Seq("ACG").reverse_complement_rna()
         Seq('CGU')
@@ -921,7 +780,6 @@ class Seq:
 
     def transcribe(self):
         """Return the RNA sequence from a DNA sequence by creating a new Seq object.
-
         >>> from Bio.Seq import Seq
         >>> from Bio.Alphabet import generic_dna
         >>> coding_dna = Seq("ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG",
@@ -930,17 +788,14 @@ class Seq:
         Seq('ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG')
         >>> coding_dna.transcribe()
         Seq('AUGGCCAUUGUAAUGGGCCGCUGAAAGGGUGCCCGAUAG')
-
         Trying to transcribe an RNA sequence should have no effect.
         If you have a nucleotide sequence which might be DNA or RNA
         (or even a mixture), calling the transcribe method will ensure
         any T becomes U.
-
         Trying to transcribe a protein sequence will replace any
         T for Threonine with U for Selenocysteine, which has no
         biologically plausible rational. Older versions of Biopython
         would throw an exception.
-
         >>> from Bio.Alphabet import generic_protein
         >>> from Bio.Seq import Seq
         >>> my_protein = Seq("MAIVMGRT", generic_protein)
@@ -951,7 +806,6 @@ class Seq:
 
     def back_transcribe(self):
         """Return the DNA sequence from an RNA sequence by creating a new Seq object.
-
         >>> from Bio.Alphabet import generic_rna
         >>> from Bio.Seq import Seq
         >>> messenger_rna = Seq("AUGGCCAUUGUAAUGGGCCGCUGAAAGGGUGCCCGAUAG",
@@ -960,15 +814,12 @@ class Seq:
         Seq('AUGGCCAUUGUAAUGGGCCGCUGAAAGGGUGCCCGAUAG')
         >>> messenger_rna.back_transcribe()
         Seq('ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG')
-
         Trying to back-transcribe DNA has no effect, If you have a nucleotide
         sequence which might be DNA or RNA (or even a mixture), calling the
         back-transcribe method will ensure any T becomes U.
-
         Trying to back-transcribe a protein sequence will replace any U for
         Selenocysteine with T for Threonine, which is biologically meaningless.
         Older versions of Biopython would raise an exception here:
-
         >>> from Bio.Alphabet import generic_protein
         >>> from Bio.Seq import Seq
         >>> my_protein = Seq("MAIVMGRU", generic_protein)
@@ -981,11 +832,9 @@ class Seq:
         self, table="Standard", stop_symbol="*", to_stop=False, cds=False, gap="-"
     ):
         """Turn a nucleotide sequence into a protein sequence by creating a new Seq object.
-
         This method will translate DNA or RNA sequences, and those with a
         nucleotide or generic alphabet.  Trying to translate a protein
         sequence raises an exception.
-
         Arguments:
          - table - Which codon table to use?  This can be either a name
            (string), an NCBI identifier (integer), or a CodonTable
@@ -1007,9 +856,7 @@ class Seq:
            If these tests fail, an exception is raised.
          - gap - Single character string to denote symbol used for gaps.
            Defaults to the minus sign.
-
         e.g. Using the standard table:
-
         >>> coding_dna = Seq("GTGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG")
         >>> coding_dna.translate()
         Seq('VAIVMGR*KGAR*')
@@ -1017,41 +864,31 @@ class Seq:
         Seq('VAIVMGR@KGAR@')
         >>> coding_dna.translate(to_stop=True)
         Seq('VAIVMGR')
-
         Now using NCBI table 2, where TGA is not a stop codon:
-
         >>> coding_dna.translate(table=2)
         Seq('VAIVMGRWKGAR*')
         >>> coding_dna.translate(table=2, to_stop=True)
         Seq('VAIVMGRWKGAR')
-
         In fact, GTG is an alternative start codon under NCBI table 2, meaning
         this sequence could be a complete CDS:
-
         >>> coding_dna.translate(table=2, cds=True)
         Seq('MAIVMGRWKGAR')
-
         It isn't a valid CDS under NCBI table 1, due to both the start codon
         and also the in frame stop codons:
-
         >>> coding_dna.translate(table=1, cds=True)
         Traceback (most recent call last):
             ...
         Bio.Data.CodonTable.TranslationError: First codon 'GTG' is not a start codon
-
         If the sequence has no in-frame stop codon, then the to_stop argument
         has no effect:
-
         >>> coding_dna2 = Seq("TTGGCCATTGTAATGGGCCGC")
         >>> coding_dna2.translate()
         Seq('LAIVMGR')
         >>> coding_dna2.translate(to_stop=True)
         Seq('LAIVMGR')
-
         NOTE - Ambiguous codons like "TAN" or "NNN" could be an amino acid
         or a stop codon.  These are translated as "X".  Any invalid codon
         (e.g. "TA?" or "T-A") will throw a TranslationError.
-
         NOTE - This does NOT behave like the python string's translate
         method.  For that use str(my_seq).translate(...) instead.
         """
@@ -1089,11 +926,9 @@ class Seq:
 
     def ungap(self, gap="-"):
         """Return a copy of the sequence without the gap character(s).
-
         The gap character now defaults to the minus sign, and can only
         be specified via the method argument. This is no longer possible
         via sequence's alphabet (as was possible up to Biopython 1.77):
-
         >>> from Bio.Seq import Seq
         >>> from Bio.Alphabet import generic_dna
         >>> my_dna = Seq("-ATA--TGAAAT-TTGAAAA", generic_dna)
@@ -1112,17 +947,13 @@ class Seq:
 
     def join(self, other):
         """Return a merge of the sequences in other, spaced by the sequence from self.
-
         Accepts either a Seq or string (and iterates over the letters), or an
         iterable containing Seq or string objects. These arguments will be
         concatenated with the calling sequence as the spacer:
-
         >>> concatenated = Seq('NNNNN').join([Seq("AAA"), Seq("TTT"), Seq("PPP")])
         >>> concatenated
         Seq('AAANNNNNTTTNNNNNPPP')
-
         Joining the letters of a single sequence:
-
         >>> Seq('NNNNN').join(Seq("ACGT"))
         Seq('ANNNNNCNNNNNGNNNNNT')
         >>> Seq('NNNNN').join("ACGT")
@@ -1146,10 +977,8 @@ class Seq:
 
 class UnknownSeq(Seq):
     """Read-only sequence object of known length but unknown contents.
-
     If you have an unknown sequence, you can represent this with a normal
     Seq object, for example:
-
     >>> my_seq = Seq("N"*5)
     >>> my_seq
     Seq('NNNNN')
@@ -1157,10 +986,8 @@ class UnknownSeq(Seq):
     5
     >>> print(my_seq)
     NNNNN
-
     However, this is rather wasteful of memory (especially for large
     sequences), which is where this class is most useful:
-
     >>> unk_five = UnknownSeq(5)
     >>> unk_five
     UnknownSeq(5, character='?')
@@ -1168,27 +995,21 @@ class UnknownSeq(Seq):
     5
     >>> print(unk_five)
     ?????
-
     You can add unknown sequence together, provided their alphabets and
     characters are compatible, and get another memory saving UnknownSeq:
-
     >>> unk_four = UnknownSeq(4)
     >>> unk_four
     UnknownSeq(4, character='?')
     >>> unk_four + unk_five
     UnknownSeq(9, character='?')
-
     If the alphabet or characters don't match up, the addition gives an
     ordinary Seq object:
-
     >>> unk_nnnn = UnknownSeq(4, character="N")
     >>> unk_nnnn
     UnknownSeq(4, character='N')
     >>> unk_nnnn + unk_four
     Seq('NNNN????')
-
     Combining with a real Seq gives a new Seq object:
-
     >>> known_seq = Seq("ACGT")
     >>> unk_four + known_seq
     Seq('????ACGT')
@@ -1198,7 +1019,6 @@ class UnknownSeq(Seq):
 
     def __init__(self, length, alphabet=Alphabet.generic_alphabet, character=None):
         """Create a new UnknownSeq object.
-
         If character is omitted, it is determined from the alphabet, "N" for
         nucleotides, "X" for proteins, and "?" otherwise.
         """
@@ -1236,27 +1056,21 @@ class UnknownSeq(Seq):
 
     def __add__(self, other):
         """Add another sequence or string to this sequence.
-
         Adding two UnknownSeq objects returns another UnknownSeq object
         provided the character is the same and the alphabets are compatible.
-
         >>> from Bio.Seq import UnknownSeq
         >>> from Bio.Alphabet import generic_protein
         >>> UnknownSeq(10, generic_protein) + UnknownSeq(5, generic_protein)
         UnknownSeq(15, character='X')
-
         If the characters differ, an UnknownSeq object cannot be used, so a
         Seq object is returned:
-
         >>> from Bio.Seq import UnknownSeq
         >>> from Bio.Alphabet import generic_protein
         >>> UnknownSeq(10, generic_protein) + UnknownSeq(5, generic_protein,
         ...                                              character="x")
         Seq('XXXXXXXXXXxxxxx')
-
         If adding a string to an UnknownSeq, a new Seq is returned with the
         same alphabet:
-
         >>> from Bio.Seq import UnknownSeq
         >>> from Bio.Alphabet import generic_protein
         >>> UnknownSeq(5, generic_protein) + "LV"
@@ -1275,7 +1089,6 @@ class UnknownSeq(Seq):
 
     def __mul__(self, other):
         """Multiply UnknownSeq by integer.
-
         >>> from Bio.Seq import UnknownSeq
         >>> from Bio.Alphabet import generic_dna
         >>> UnknownSeq(3) * 2
@@ -1289,7 +1102,6 @@ class UnknownSeq(Seq):
 
     def __rmul__(self, other):
         """Multiply integer by UnknownSeq.
-
         >>> from Bio.Seq import UnknownSeq
         >>> 2 * UnknownSeq(3)
         UnknownSeq(6, character='?')
@@ -1302,10 +1114,8 @@ class UnknownSeq(Seq):
 
     def __imul__(self, other):
         """Multiply UnknownSeq in-place.
-
         Note although UnknownSeq is immutable, the in-place method is
         included to match the behaviour for regular Python strings.
-
         >>> from Bio.Seq import UnknownSeq
         >>> seq = UnknownSeq(3, character="N")
         >>> seq *= 2
@@ -1318,7 +1128,6 @@ class UnknownSeq(Seq):
 
     def __getitem__(self, index):
         """Get a subsequence from the UnknownSeq object.
-
         >>> unk = UnknownSeq(8, character="N")
         >>> print(unk[:])
         NNNNNNNN
@@ -1363,22 +1172,17 @@ class UnknownSeq(Seq):
 
     def count(self, sub, start=0, end=sys.maxsize):
         """Return a non-overlapping count, like that of a python string.
-
         This behaves like the python string (and Seq object) method of the
         same name, which does a non-overlapping count!
-
         For an overlapping search use the newer count_overlap() method.
-
         Returns an integer, the number of occurrences of substring
         argument sub in the (sub)sequence given by [start:end].
         Optional arguments start and end are interpreted as in slice
         notation.
-
         Arguments:
          - sub - a string or another Seq object to look for
          - start - optional integer, slice start
          - end - optional integer, slice end
-
         >>> "NNNN".count("N")
         4
         >>> Seq("NNNN").count("N")
@@ -1389,11 +1193,9 @@ class UnknownSeq(Seq):
         0
         >>> UnknownSeq(4, character="N").count("AA")
         0
-
         HOWEVER, please note because that python strings and Seq objects (and
         MutableSeq objects) do a non-overlapping search, this may not give
         the answer you expect:
-
         >>> UnknownSeq(4, character="N").count("NN")
         2
         >>> UnknownSeq(4, character="N").count("NNN")
@@ -1426,30 +1228,23 @@ class UnknownSeq(Seq):
 
     def count_overlap(self, sub, start=0, end=sys.maxsize):
         """Return an overlapping count.
-
         For a non-overlapping search use the count() method.
-
         Returns an integer, the number of occurrences of substring
         argument sub in the (sub)sequence given by [start:end].
         Optional arguments start and end are interpreted as in slice
         notation.
-
         Arguments:
          - sub - a string or another Seq object to look for
          - start - optional integer, slice start
          - end - optional integer, slice end
-
         e.g.
-
         >>> from Bio.Seq import UnknownSeq
         >>> UnknownSeq(4, character="N").count_overlap("NN")
         3
         >>> UnknownSeq(4, character="N").count_overlap("NNN")
         2
-
         Where substrings do not overlap, should behave the same as
         the count() method:
-
         >>> UnknownSeq(4, character="N").count_overlap("N")
         4
         >>> UnknownSeq(4, character="N").count_overlap("N") == UnknownSeq(4, character="N").count("N")
@@ -1490,7 +1285,6 @@ class UnknownSeq(Seq):
 
     def complement(self):
         """Return the complement of an unknown nucleotide equals itself.
-
         >>> my_nuc = UnknownSeq(8)
         >>> my_nuc
         UnknownSeq(8, character='?')
@@ -1509,9 +1303,7 @@ class UnknownSeq(Seq):
 
     def reverse_complement(self):
         """Return the reverse complement of an unknown sequence.
-
         The reverse complement of an unknown nucleotide equals itself:
-
         >>> from Bio.Seq import UnknownSeq
         >>> from Bio.Alphabet import generic_dna
         >>> example = UnknownSeq(6, generic_dna)
@@ -1528,7 +1320,6 @@ class UnknownSeq(Seq):
 
     def transcribe(self):
         """Return an unknown RNA sequence from an unknown DNA sequence.
-
         >>> my_dna = UnknownSeq(10, character="N")
         >>> my_dna
         UnknownSeq(10, character='N')
@@ -1545,7 +1336,6 @@ class UnknownSeq(Seq):
 
     def back_transcribe(self):
         """Return an unknown DNA sequence from an unknown RNA sequence.
-
         >>> my_rna = UnknownSeq(20, character="N")
         >>> my_rna
         UnknownSeq(20, character='N')
@@ -1562,7 +1352,6 @@ class UnknownSeq(Seq):
 
     def upper(self):
         """Return an upper case copy of the sequence.
-
         >>> from Bio.Seq import UnknownSeq
         >>> my_seq = UnknownSeq(20, character="n")
         >>> my_seq
@@ -1573,14 +1362,12 @@ class UnknownSeq(Seq):
         UnknownSeq(20, character='N')
         >>> print(my_seq.upper())
         NNNNNNNNNNNNNNNNNNNN
-
         See also the lower method.
         """
         return UnknownSeq(self._length, character=self._character.upper())
 
     def lower(self):
         """Return a lower case copy of the sequence.
-
         >>> from Bio.Seq import UnknownSeq
         >>> my_seq = UnknownSeq(20, character="X")
         >>> my_seq
@@ -1591,7 +1378,6 @@ class UnknownSeq(Seq):
         UnknownSeq(20, character='x')
         >>> print(my_seq.lower())
         xxxxxxxxxxxxxxxxxxxx
-
         See also the upper method.
         """
         return UnknownSeq(self._length, character=self._character.lower())
@@ -1600,9 +1386,7 @@ class UnknownSeq(Seq):
         self, table="Standard", stop_symbol="*", to_stop=False, cds=False, gap="-"
     ):
         """Translate an unknown nucleotide sequence into an unknown protein.
-
         e.g.
-
         >>> my_seq = UnknownSeq(9, character="N")
         >>> print(my_seq)
         NNNNNNNNN
@@ -1611,9 +1395,7 @@ class UnknownSeq(Seq):
         UnknownSeq(3, character='X')
         >>> print(my_protein)
         XXX
-
         In comparison, using a normal Seq object:
-
         >>> my_seq = Seq("NNNNNNNNN")
         >>> print(my_seq)
         NNNNNNNNN
@@ -1622,17 +1404,14 @@ class UnknownSeq(Seq):
         Seq('XXX')
         >>> print(my_protein)
         XXX
-
         """
         return UnknownSeq(self._length // 3, Alphabet.generic_protein, "X")
 
     def ungap(self, gap="-"):
         """Return a copy of the sequence without the gap character(s).
-
         The gap character now defaults to the minus sign, and can only
         be specified via the method argument. This is no longer possible
         via sequence's alphabet (as was possible up to Biopython 1.77):
-
         >>> from Bio.Alphabet import generic_dna
         >>> from Bio.Seq import UnknownSeq
         >>> my_dna = UnknownSeq(20, alphabet=generic_dna)
@@ -1642,10 +1421,8 @@ class UnknownSeq(Seq):
         UnknownSeq(20, character='N')
         >>> my_dna.ungap("-")
         UnknownSeq(20, character='N')
-
         If the UnknownSeq is using the gap character, then an empty Seq is
         returned:
-
         >>> my_gap = UnknownSeq(20, generic_dna, character="-")
         >>> my_gap
         UnknownSeq(20, character='-')
@@ -1663,28 +1440,21 @@ class UnknownSeq(Seq):
 
     def join(self, other):
         """Return a merge of the sequences in other, spaced by the sequence from self.
-
         Accepts either a Seq or string (and iterates over the letters), or an
         iterable containing Seq or string objects. These arguments will be
         concatenated with the calling sequence as the spacer:
-
         >>> concatenated = UnknownSeq(5).join([Seq("AAA"), Seq("TTT"), Seq("PPP")])
         >>> concatenated
         Seq('AAA?????TTT?????PPP')
-
         If all the inputs are also UnknownSeq using the same character, then it
         returns a new UnknownSeq:
-
         >>> UnknownSeq(5).join([UnknownSeq(3), UnknownSeq(3), UnknownSeq(3)])
         UnknownSeq(19, character='?')
-
         Examples taking a single sequence and joining the letters:
-
         >>> UnknownSeq(3).join("ACGT")
         Seq('A???C???G???T')
         >>> UnknownSeq(3).join(UnknownSeq(4))
         UnknownSeq(13, character='?')
-
         Will only return an UnknownSeq object if all of the objects to be joined are
         also UnknownSeqs with the same character as the spacer, similar to how the
         addition of an UnknownSeq and another UnknownSeq would work.
@@ -1715,11 +1485,9 @@ class UnknownSeq(Seq):
 
 class MutableSeq:
     """An editable sequence object (with an alphabet).
-
     Unlike normal python strings and our basic sequence object (the Seq class)
     which are immutable, the MutableSeq lets you edit the sequence in place.
     However, this means you cannot use a MutableSeq object as a dictionary key.
-
     >>> from Bio.Seq import MutableSeq
     >>> from Bio.Alphabet import generic_dna
     >>> my_seq = MutableSeq("ACTCGTCGTCG", generic_dna)
@@ -1737,7 +1505,6 @@ class MutableSeq:
     MutableSeq('ACTCGNNNTCG')
     >>> len(my_seq)
     11
-
     Note that the MutableSeq object does not support as many string-like
     or biological methods as the Seq object.
     """
@@ -1767,7 +1534,6 @@ class MutableSeq:
 
     def __str__(self):
         """Return the full sequence as a python string.
-
         Note that Biopython 1.44 and earlier would give a truncated
         version of repr(my_seq) for str(my_seq).  If you are writing code
         which needs to be backwards compatible with old Biopython, you
@@ -1778,30 +1544,24 @@ class MutableSeq:
 
     def __eq__(self, other):
         """Compare the sequence to another sequence or a string.
-
         Historically comparing DNA to RNA, or Nucleotide to Protein would
         raise an exception. This was later downgraded to a warning, but since
         Biopython 1.78 the alphabet is ignored for comparisons.
-
         If you need to support older Biopython versions, please just do
         explicit comparisons:
-
         >>> seq1 = MutableSeq("ACGT")
         >>> seq2 = MutableSeq("ACGT")
         >>> id(seq1) == id(seq2)
         False
         >>> str(seq1) == str(seq2)
         True
-
         Biopython now does:
-
         >>> seq1 == seq2
         True
         >>> seq1 == Seq("ACGT")
         True
         >>> seq1 == "ACGT"
         True
-
         """
         if isinstance(other, MutableSeq):
             return self.data == other.data
@@ -1857,7 +1617,6 @@ class MutableSeq:
 
     def __getitem__(self, index):
         """Return a subsequence of single letter, use my_seq[index].
-
         >>> my_seq = MutableSeq('ACTCGACGTCG')
         >>> my_seq[5]
         'A'
@@ -1871,7 +1630,6 @@ class MutableSeq:
 
     def __setitem__(self, index, value):
         """Set a subsequence of single letter via value parameter.
-
         >>> my_seq = MutableSeq('ACTCGACGTCG')
         >>> my_seq[0] = 'T'
         >>> my_seq
@@ -1891,7 +1649,6 @@ class MutableSeq:
 
     def __delitem__(self, index):
         """Delete a subsequence of single letter.
-
         >>> my_seq = MutableSeq('ACTCGACGTCG')
         >>> del my_seq[0]
         >>> my_seq
@@ -1902,7 +1659,6 @@ class MutableSeq:
 
     def __add__(self, other):
         """Add another sequence or string to this sequence.
-
         Returns a new MutableSeq object.
         """
         a = self.alphabet
@@ -1924,7 +1680,6 @@ class MutableSeq:
 
     def __radd__(self, other):
         """Add a sequence on the left.
-
         >>> from Bio.Seq import MutableSeq
         >>> from Bio.Alphabet import generic_protein
         >>> "LV" + MutableSeq("MELKI", generic_protein)
@@ -1948,10 +1703,8 @@ class MutableSeq:
 
     def __mul__(self, other):
         """Multiply MutableSeq by integer.
-
         Note this is not in-place and returns a new object,
         matching native Python list multiplication.
-
         >>> from Bio.Seq import MutableSeq
         >>> from Bio.Alphabet import generic_dna
         >>> MutableSeq('ATG') * 2
@@ -1965,10 +1718,8 @@ class MutableSeq:
 
     def __rmul__(self, other):
         """Multiply integer by MutableSeq.
-
         Note this is not in-place and returns a new object,
         matching native Python list multiplication.
-
         >>> from Bio.Seq import MutableSeq
         >>> from Bio.Alphabet import generic_dna
         >>> 2 * MutableSeq('ATG')
@@ -1982,7 +1733,6 @@ class MutableSeq:
 
     def __imul__(self, other):
         """Multiply MutableSeq in-place.
-
         >>> from Bio.Seq import MutableSeq
         >>> from Bio.Alphabet import generic_dna
         >>> seq = MutableSeq('ATG', generic_dna)
@@ -1996,19 +1746,16 @@ class MutableSeq:
 
     def append(self, c):
         """Add a subsequence to the mutable sequence object.
-
         >>> my_seq = MutableSeq('ACTCGACGTCG')
         >>> my_seq.append('A')
         >>> my_seq
         MutableSeq('ACTCGACGTCGA')
-
         No return value.
         """
         self.data.append(c)
 
     def insert(self, i, c):
         """Add a subsequence to the mutable sequence object at a given index.
-
         >>> my_seq = MutableSeq('ACTCGACGTCG')
         >>> my_seq.insert(0,'A')
         >>> my_seq
@@ -2016,14 +1763,12 @@ class MutableSeq:
         >>> my_seq.insert(8,'G')
         >>> my_seq
         MutableSeq('AACTCGACGGTCG')
-
         No return value.
         """
         self.data.insert(i, c)
 
     def pop(self, i=(-1)):
         """Remove a subsequence of a single letter at given index.
-
         >>> my_seq = MutableSeq('ACTCGACGTCG')
         >>> my_seq.pop()
         'G'
@@ -2033,7 +1778,6 @@ class MutableSeq:
         'C'
         >>> my_seq
         MutableSeq('ACTCGACGT')
-
         Returns the last character of the sequence.
         """
         c = self.data[i]
@@ -2042,7 +1786,6 @@ class MutableSeq:
 
     def remove(self, item):
         """Remove a subsequence of a single letter from mutable sequence.
-
         >>> my_seq = MutableSeq('ACTCGACGTCG')
         >>> my_seq.remove('C')
         >>> my_seq
@@ -2050,7 +1793,6 @@ class MutableSeq:
         >>> my_seq.remove('A')
         >>> my_seq
         MutableSeq('TCGACGTCG')
-
         No return value.
         """
         for i in range(len(self.data)):
@@ -2061,24 +1803,18 @@ class MutableSeq:
 
     def count(self, sub, start=0, end=sys.maxsize):
         """Return a non-overlapping count, like that of a python string.
-
         This behaves like the python string method of the same name,
         which does a non-overlapping count!
-
         For an overlapping search use the newer count_overlap() method.
-
         Returns an integer, the number of occurrences of substring
         argument sub in the (sub)sequence given by [start:end].
         Optional arguments start and end are interpreted as in slice
         notation.
-
         Arguments:
          - sub - a string or another Seq object to look for
          - start - optional integer, slice start
          - end - optional integer, slice end
-
         e.g.
-
         >>> from Bio.Seq import MutableSeq
         >>> my_mseq = MutableSeq("AAAATGA")
         >>> print(my_mseq.count("A"))
@@ -2089,16 +1825,13 @@ class MutableSeq:
         1
         >>> print(my_mseq.count("AT", 2, -1))
         1
-
         HOWEVER, please note because that python strings, Seq objects and
         MutableSeq objects do a non-overlapping search, this may not give
         the answer you expect:
-
         >>> "AAAA".count("AA")
         2
         >>> print(MutableSeq("AAAA").count("AA"))
         2
-
         An overlapping search would give the answer as three!
         """
         try:
@@ -2123,21 +1856,16 @@ class MutableSeq:
 
     def count_overlap(self, sub, start=0, end=sys.maxsize):
         """Return an overlapping count.
-
         For a non-overlapping search use the count() method.
-
         Returns an integer, the number of occurrences of substring
         argument sub in the (sub)sequence given by [start:end].
         Optional arguments start and end are interpreted as in slice
         notation.
-
         Arguments:
          - sub - a string or another Seq object to look for
          - start - optional integer, slice start
          - end - optional integer, slice end
-
         e.g.
-
         >>> from Bio.Seq import MutableSeq
         >>> print(MutableSeq("AAAA").count_overlap("AA"))
         3
@@ -2145,10 +1873,8 @@ class MutableSeq:
         4
         >>> print(MutableSeq("ATATATATA").count_overlap("ATA", 3, -1))
         1
-
         Where substrings do not overlap, should behave the same as
         the count() method:
-
         >>> from Bio.Seq import MutableSeq
         >>> my_mseq = MutableSeq("AAAATGA")
         >>> print(my_mseq.count_overlap("A"))
@@ -2167,7 +1893,6 @@ class MutableSeq:
         1
         >>> my_mseq.count_overlap("AT", 2, -1) == my_mseq.count("AT", 2, -1)
         True
-
         HOWEVER, do not use this method for such cases because the
         count() method is much for efficient.
         """
@@ -2185,7 +1910,6 @@ class MutableSeq:
 
     def index(self, item):
         """Return first occurrence position of a single entry (i.e. letter).
-
         >>> my_seq = MutableSeq("ACTCGACGTCG")
         >>> my_seq.index("A")
         0
@@ -2193,7 +1917,6 @@ class MutableSeq:
         2
         >>> my_seq.index(Seq("T"))
         2
-
         Note unlike a Biopython Seq object, or Python string, multi-letter
         subsequences are not supported.  Instead this acts like an array or
         a list of the entries. There is therefore no ``.rindex()`` method.
@@ -2206,19 +1929,15 @@ class MutableSeq:
 
     def reverse(self):
         """Modify the mutable sequence to reverse itself.
-
         No return value.
         """
         self.data.reverse()
 
     def complement(self):
         """Modify the mutable sequence to take on its complement.
-
         No return value.
-
         If the sequence contains neither T nor U, DNA is assumed
         and any A will be mapped to T.
-
         If the sequence contains both T and U, an exception is raised.
         """
         if "U" in self.data and "T" in self.data:
@@ -2234,7 +1953,6 @@ class MutableSeq:
 
     def reverse_complement(self):
         """Modify the mutable sequence to take on its reverse complement.
-
         No return value.
         """
         self.complement()
@@ -2242,7 +1960,6 @@ class MutableSeq:
 
     def extend(self, other):
         """Add a sequence to the original mutable sequence object.
-
         >>> my_seq = MutableSeq('ACTCGACGTCG')
         >>> my_seq.extend('A')
         >>> my_seq
@@ -2250,7 +1967,6 @@ class MutableSeq:
         >>> my_seq.extend('TTT')
         >>> my_seq
         MutableSeq('ACTCGACGTCGATTT')
-
         No return value.
         """
         if isinstance(other, MutableSeq):
@@ -2262,7 +1978,6 @@ class MutableSeq:
 
     def toseq(self):
         """Return the full sequence as a new immutable Seq object.
-
         >>> from Bio.Seq import MutableSeq
         >>> my_mseq = MutableSeq("MKQHKAMIVALIVICITAVVAAL")
         >>> my_mseq
@@ -2274,13 +1989,10 @@ class MutableSeq:
 
     def join(self, other):
         """Return a merge of the sequences in other, spaced by the sequence from self.
-
         Accepts all Seq objects and Strings as objects to be concatenated with the spacer
-
         >>> concatenated = MutableSeq('NNNNN').join([Seq("AAA"), Seq("TTT"), Seq("PPP")])
         >>> concatenated
         Seq('AAANNNNNTTTNNNNNPPP')
-
         Throws error if other is not an iterable and if objects inside of the iterable
         are not Seq or String objects
         """
@@ -2295,13 +2007,9 @@ class MutableSeq:
 
 def transcribe(dna):
     """Transcribe a DNA sequence into RNA.
-
     If given a string, returns a new string object.
-
     Given a Seq or MutableSeq, returns a new Seq object with an RNA alphabet.
-
     e.g.
-
     >>> transcribe("ACTGN")
     'ACUGN'
     """
@@ -2315,13 +2023,9 @@ def transcribe(dna):
 
 def back_transcribe(rna):
     """Return the RNA sequence back-transcribed into DNA.
-
     If given a string, returns a new string object.
-
     Given a Seq or MutableSeq, returns a new Seq object with an RNA alphabet.
-
     e.g.
-
     >>> back_transcribe("ACUGN")
     'ACTGN'
     """
@@ -2337,7 +2041,6 @@ def _translate_str(
     sequence, table, stop_symbol="*", to_stop=False, cds=False, pos_stop="X", gap=None
 ):
     """Translate nucleotide string into a protein string (PRIVATE).
-
     Arguments:
      - sequence - a string
      - table - a CodonTable object (NOT a table name or id number)
@@ -2356,11 +2059,8 @@ def _translate_str(
        If these tests fail, an exception is raised.
      - gap - Single character string to denote symbol used for gaps.
        Defaults to None.
-
     Returns a string.
-
     e.g.
-
     >>> from Bio.Data import CodonTable
     >>> table = CodonTable.ambiguous_dna_by_id[1]
     >>> _translate_str("AAA", table)
@@ -2375,16 +2075,13 @@ def _translate_str(
     Traceback (most recent call last):
        ...
     Bio.Data.CodonTable.TranslationError: Codon 'TA?' is invalid
-
     In a change to older versions of Biopython, partial codons are now
     always regarded as an error (previously only checked if cds=True)
     and will trigger a warning (likely to become an exception in a
     future release).
-
     If **cds=True**, the start and stop codons are checked, and the start
     codon will be translated at methionine. The sequence must be an
     while number of codons.
-
     >>> _translate_str("ATGCCCTAG", table, cds=True)
     'MP'
     >>> _translate_str("AAACCCTAG", table, cds=True)
@@ -2400,8 +2097,8 @@ def _translate_str(
     amino_acids = []
     forward_table = table.forward_table
     stop_codons = table.stop_codons
-    if table.nucleotide_alphabet.letters is not None:
-        valid_letters = set(table.nucleotide_alphabet.letters.upper())
+    if table.is_dna:
+        valid_letters = set(_ambiguous_dna_letters.upper())
     else:
         # Assume the worst case, ambiguous DNA or RNA:
         valid_letters = set(
@@ -2486,10 +2183,8 @@ def translate(
     sequence, table="Standard", stop_symbol="*", to_stop=False, cds=False, gap=None
 ):
     """Translate a nucleotide sequence into amino acids.
-
     If given a string, returns a new string object. Given a Seq or
     MutableSeq, returns a Seq object with a protein alphabet.
-
     Arguments:
      - table - Which codon table to use?  This can be either a name
        (string), an NCBI identifier (integer), or a CodonTable object
@@ -2512,9 +2207,7 @@ def translate(
        If these tests fail, an exception is raised.
      - gap - Single character string to denote symbol used for gaps.
        Defaults to None.
-
     A simple string example using the default (standard) genetic code:
-
     >>> coding_dna = "GTGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG"
     >>> translate(coding_dna)
     'VAIVMGR*KGAR*'
@@ -2522,55 +2215,41 @@ def translate(
     'VAIVMGR@KGAR@'
     >>> translate(coding_dna, to_stop=True)
     'VAIVMGR'
-
     Now using NCBI table 2, where TGA is not a stop codon:
-
     >>> translate(coding_dna, table=2)
     'VAIVMGRWKGAR*'
     >>> translate(coding_dna, table=2, to_stop=True)
     'VAIVMGRWKGAR'
-
     In fact this example uses an alternative start codon valid under NCBI
     table 2, GTG, which means this example is a complete valid CDS which
     when translated should really start with methionine (not valine):
-
     >>> translate(coding_dna, table=2, cds=True)
     'MAIVMGRWKGAR'
-
     Note that if the sequence has no in-frame stop codon, then the to_stop
     argument has no effect:
-
     >>> coding_dna2 = "GTGGCCATTGTAATGGGCCGC"
     >>> translate(coding_dna2)
     'VAIVMGR'
     >>> translate(coding_dna2, to_stop=True)
     'VAIVMGR'
-
     NOTE - Ambiguous codons like "TAN" or "NNN" could be an amino acid
     or a stop codon.  These are translated as "X".  Any invalid codon
     (e.g. "TA?" or "T-A") will throw a TranslationError.
-
     It will however translate either DNA or RNA.
-
     NOTE - Since version 1.71 Biopython contains codon tables with 'ambiguous
     stop codons'. These are stop codons with unambiguous sequence but which
     have a context dependent coding as STOP or as amino acid. With these tables
     'to_stop' must be False (otherwise a ValueError is raised). The dual
     coding codons will always be translated as amino acid, except for
     'cds=True', where the last codon will be translated as STOP.
-
     >>> coding_dna3 = "ATGGCACGGAAGTGA"
     >>> translate(coding_dna3)
     'MARK*'
-
     >>> translate(coding_dna3, table=27)  # Table 27: TGA -> STOP or W
     'MARKW'
-
     It will however raise a BiopythonWarning (not shown).
-
     >>> translate(coding_dna3, table=27, cds=True)
     'MARK'
-
     >>> translate(coding_dna3, table=27, to_stop=True)
     Traceback (most recent call last):
        ...
@@ -2597,20 +2276,14 @@ def translate(
 
 def reverse_complement(sequence):
     """Return the reverse complement sequence of a nucleotide string.
-
     If given a string, returns a new string object.
     Given a Seq or a MutableSeq, returns a new Seq object with the same
     alphabet.
-
     Supports unambiguous and ambiguous nucleotide sequences.
-
     e.g.
-
     >>> reverse_complement("ACTG-NH")
     'DN-CAGT'
-
     If neither T nor U is present, DNA is assumed and A is mapped to T:
-
     >>> reverse_complement("A")
     'T'
     """
@@ -2619,24 +2292,16 @@ def reverse_complement(sequence):
 
 def complement(sequence):
     """Return the complement sequence of a DNA string.
-
     If given a string, returns a new string object.
-
     Given a Seq or a MutableSeq, returns a new Seq object with the same
     alphabet.
-
     Supports unambiguous and ambiguous nucleotide sequences.
-
     e.g.
-
     >>> complement("ACTG-NH")
     'TGAC-ND'
-
     If neither T nor U is present, DNA is assumed and A is mapped to T:
-
     >>> complement("A")
     'T'
-
     However, this may not be supported in future. Please use the
     complement_rna function if you have RNA.
     """
@@ -2666,12 +2331,10 @@ def complement(sequence):
 
 def complement_rna(sequence):
     """Return the complement sequence of an RNA string.
-
     >>> complement("ACG")  # assumed DNA
     'TGC'
     >>> complement_rna("ACG")
     'UGC'
-
     If the sequence contains a T, and error is raised.
     """
     if isinstance(sequence, Seq):

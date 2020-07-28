@@ -5,16 +5,12 @@
 # Please see the LICENSE file that should have been included as part of this
 # package.
 """Codon tables based on those from the NCBI.
-
 These tables are based on parsing the NCBI file
 ftp://ftp.ncbi.nih.gov/entrez/misc/data/gc.prt
 using Scripts/update_ncbi_codon_table.py
-
 Last updated at Version 4.4 (May 2019)
 """
 
-from Bio import Alphabet
-from Bio.Alphabet import IUPAC
 from Bio.Data import IUPACData
 
 
@@ -50,10 +46,6 @@ class TranslationError(Exception):
 
 class CodonTable:
     """A codon-table, or genetic code."""
-
-    nucleotide_alphabet = Alphabet.generic_nucleotide
-    protein_alphabet = Alphabet.generic_protein
-
     forward_table = {}  # only includes codons which actually code
     back_table = {}  # for back translations
     start_codons = []
@@ -61,27 +53,27 @@ class CodonTable:
 
     # Not always called from derived classes!
     def __init__(
-        self,
-        nucleotide_alphabet=nucleotide_alphabet,
-        protein_alphabet=protein_alphabet,
+        self,        
+        is_dna = True,
         forward_table=forward_table,
         back_table=back_table,
         start_codons=start_codons,
         stop_codons=stop_codons,
     ):
         """Initialize the class."""
-        self.nucleotide_alphabet = nucleotide_alphabet
-        self.protein_alphabet = protein_alphabet
+        #Default is_dna is True for DNA mode
+        
+        self.is_dna = is_dna 
         self.forward_table = forward_table
         self.back_table = back_table
         self.start_codons = start_codons
         self.stop_codons = stop_codons
 
+                   
+
     def __str__(self):
         """Return a simple text representation of the codon table.
-
         e.g.::
-
             >>> import Bio.Data.CodonTable
             >>> print(Bio.Data.CodonTable.standard_dna_table)
             Table 1 Standard, SGC0
@@ -115,9 +107,8 @@ class CodonTable:
 
         # Use the main four letters (and the conventional ordering)
         # even for ambiguous tables
-        letters = self.nucleotide_alphabet.letters
-        if isinstance(self.nucleotide_alphabet, Alphabet.DNAAlphabet) or (
-            letters is not None and "T" in letters
+        
+        if self.is_dna:
         ):
             letters = "TCAG"
         else:
@@ -156,7 +147,6 @@ class CodonTable:
 
 def make_back_table(table, default_stop_codon):
     """Back a back-table (naive single codon mapping).
-
     ONLY RETURNS A SINGLE CODON, chosen from the possible alternatives
     based on their sort order.
     """
@@ -172,8 +162,7 @@ def make_back_table(table, default_stop_codon):
 class NCBICodonTable(CodonTable):
     """Codon table for generic nucleotide sequences."""
 
-    nucleotide_alphabet = Alphabet.generic_nucleotide
-    protein_alphabet = IUPAC.protein
+    is_dna = False
 
     def __init__(self, id, names, table, start_codons, stop_codons):
         """Initialize the class."""
@@ -196,13 +185,13 @@ class NCBICodonTable(CodonTable):
 class NCBICodonTableDNA(NCBICodonTable):
     """Codon table for unambiguous DNA sequences."""
 
-    nucleotide_alphabet = IUPAC.unambiguous_dna
+    is_dna = True
 
 
 class NCBICodonTableRNA(NCBICodonTable):
     """Codon table for unambiguous RNA sequences."""
 
-    nucleotide_alphabet = IUPAC.unambiguous_rna
+    is_dna = False
 
 
 # ########  Deal with ambiguous forward translations
@@ -214,16 +203,14 @@ class AmbiguousCodonTable(CodonTable):
     def __init__(
         self,
         codon_table,
-        ambiguous_nucleotide_alphabet,
+        is_dna,
         ambiguous_nucleotide_values,
-        ambiguous_protein_alphabet,
         ambiguous_protein_values,
     ):
         """Initialize the class."""
         CodonTable.__init__(
             self,
-            ambiguous_nucleotide_alphabet,
-            ambiguous_protein_alphabet,
+            is_dna,                       
             AmbiguousForwardTable(
                 codon_table.forward_table,
                 ambiguous_nucleotide_values,
@@ -276,20 +263,14 @@ def list_possible_proteins(codon, forward_table, ambiguous_nucleotide_values):
 
 def list_ambiguous_codons(codons, ambiguous_nucleotide_values):
     """Extend a codon list to include all possible ambigous codons.
-
     e.g.::
-
          ['TAG', 'TAA'] -> ['TAG', 'TAA', 'TAR']
          ['UAG', 'UGA'] -> ['UAG', 'UGA', 'URA']
-
     Note that ['TAG', 'TGA'] -> ['TAG', 'TGA'], this does not add 'TRR'
     (which could also mean 'TAA' or 'TGG').
     Thus only two more codons are added in the following:
-
     e.g.::
-
         ['TGA', 'TAA', 'TAG'] -> ['TGA', 'TAA', 'TAG', 'TRA', 'TAR']
-
     Returns a new (longer) list of codon strings.
     """
     # Note ambiguous_nucleotide_values['R'] = 'AG' (etc)
@@ -406,7 +387,6 @@ class AmbiguousForwardTable:
 
     def __contains__(self, codon):
         """Check if codon works as key for ambiguous forward_table.
-
         Only returns 'True' if forward_table[codon] returns a value.
         """
         try:
@@ -424,7 +404,6 @@ class AmbiguousForwardTable:
 
     def __getitem__(self, codon):
         """Implement dictionary-like behaviour for AmbiguousForwardTable.
-
         forward_table[codon] will either return an amino acid letter,
         or throws a KeyError (if codon does not encode an amino acid)
         or a TranslationError (if codon does encode for an amino acid,
@@ -504,7 +483,6 @@ class AmbiguousForwardTable:
 
 def register_ncbi_table(name, alt_name, id, table, start_codons, stop_codons):
     """Turn codon table data into objects (PRIVATE).
-
     The data is stored in the dictionaries.
     """
     # In most cases names are divided by "; ", however there is also
@@ -517,7 +495,7 @@ def register_ncbi_table(name, alt_name, id, table, start_codons, stop_codons):
     dna = NCBICodonTableDNA(id, names + [alt_name], table, start_codons, stop_codons)
     ambig_dna = AmbiguousCodonTable(
         dna,
-        IUPAC.ambiguous_dna,
+        True,                              #is_dna value for dna case
         IUPACData.ambiguous_dna_values,
         IUPAC.extended_protein,
         IUPACData.extended_protein_values,
@@ -559,9 +537,8 @@ def register_ncbi_table(name, alt_name, id, table, start_codons, stop_codons):
     _merged_values["T"] = "U"
     ambig_generic = AmbiguousCodonTable(
         generic,
-        Alphabet.NucleotideAlphabet(),
+        False,            #is_dna value for generic case
         _merged_values,
-        IUPAC.extended_protein,
         IUPACData.extended_protein_values,
     )
 
@@ -571,9 +548,8 @@ def register_ncbi_table(name, alt_name, id, table, start_codons, stop_codons):
 
     ambig_rna = AmbiguousCodonTable(
         rna,
-        IUPAC.ambiguous_rna,
+        False,           #is_dna value for RNA case
         IUPACData.ambiguous_rna_values,
-        IUPAC.extended_protein,
         IUPACData.extended_protein_values,
     )
 
